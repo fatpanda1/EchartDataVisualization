@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="./css/reset.css">
+    <link rel="stylesheet" href="./css/index.css">
+    <script src="./js/echarts.min.js"></script>
+    <script src="./js/jquery-3.2.1.min.js"></script>
+</head>
+
+<body>
+<div id="container">
+    <div id="top">
+        <ul class="menu">
+            <li><a href="/templates/liuliang.html">实时流量</a></li>
+            <li><a href="">营销指标</a></li>
+            <li><a href="">用户画像</a></li>
+        </ul>
+    </div>
+    <div id="echarts">
+        <div id="main_l">
+
+        </div>
+        <div id="main_r">
+
+        </div>
+        <div id="bar">
+
+        </div>
+    </div>
+
+</div>
+
+<script type="text/javascript">
+    //PV
+    var myChart = echarts.init(document.getElementById('main_l'));
+
+    // var datas = [];
+    var valueDatas = [];
+    var nameDatas = [];
+
+    function addDataPv() {
+        $.ajax({
+            type: "POST",
+            url: "pvCount",
+            dataType: 'json',
+            async: false,
+            success: function (result) {
+                for (var i = 0; i < result.length; i++) {
+                    valueDatas.push(result[i].count)
+                    nameDatas.push(result[i].time)
+                }
+            }
+        });
+    }
+
+    var colors = ['#5793f3', '#d14a61', '#675bba'];
+
+
+    option = {
+        title: {
+            text: '漏斗图',
+            subtext: '纯属虚构'
+        },
+        tooltip: {
+            trigger: 'item',
+            formatter: "{a} <br/>{b} : {c}%"
+        },
+        toolbox: {
+            feature: {
+                dataView: {readOnly: false},
+                restore: {},
+                saveAsImage: {}
+            }
+        },
+        legend: {
+            data: ['曝光','点击','着陆','购买']
+        },
+
+        series: [
+            {
+                name:'漏斗图',
+                type:'funnel',
+                left: '10%',
+                top: 60,
+                //x2: 80,
+                bottom: 60,
+                width: '80%',
+                // height: {totalHeight} - y - y2,
+                min: 0,
+                max: 100,
+                minSize: '0%',
+                maxSize: '100%',
+                sort: 'descending',
+                gap: 2,
+                label: {
+                    show: true,
+                    position: 'inside'
+                },
+                labelLine: {
+                    length: 10,
+                    lineStyle: {
+                        width: 1,
+                        type: 'solid'
+                    }
+                },
+                itemStyle: {
+                    borderColor: '#fff',
+                    borderWidth: 1
+                },
+                emphasis: {
+                    label: {
+                        fontSize: 20
+                    }
+                },
+                data: [
+                    {value: 60, name: '曝光'},
+                    {value: 40, name: '点击'},
+                    {value: 20, name: '着陆'},
+                    {value: 80, name: '购买'},
+                ]
+            }
+        ]
+    };
+
+    // 使用刚指定的配置项和数据显示图表。
+    setInterval(function () {
+        addDataPv();
+        myChart.setOption(option1);
+        var length = valueDatas.length
+        for (var i = 0; i < length; i++) {
+            //删除数组的第一个元素
+            valueDatas.shift();
+            nameDatas.shift();
+        }
+    }, 500);
+
+    /**
+     * UV
+     */
+    var myChart1 = echarts.init(document.getElementById('main_r'));
+
+    var UVvalueDatas = [];
+    var UVnameDatas = [];
+
+    function addDataUV() {
+        $.ajax({
+            type: "POST",
+            url: "uvCount",
+            dataType: 'json',
+            async: false,
+            success: function (result) {
+                for (var i = 0; i < result.length; i++) {
+                    UVvalueDatas.push(result[i].count)
+                    UVnameDatas.push(result[i].time)
+                }
+            }
+        });
+    }
+
+    option2 = {
+        title: {
+            text: '今日|分时UV统计'
+        },
+        color: colors,
+
+        tooltip: {
+            trigger: 'none',
+            axisPointer: {
+                type: 'cross'
+            }
+        },
+        legend: {
+            data:['实时UV统计']
+        },
+        grid: {
+            top: 70,
+            bottom: 50
+        },
+        xAxis: [
+            {
+                axisLabel: {
+                    interval:0,
+                    rotate:40
+                },
+                type: 'category',
+                axisTick: {
+                    alignWithLabel: true
+                },
+                axisLine: {
+                    onZero: false,
+                    lineStyle: {
+                        color: colors[1]
+                    }
+                },
+                axisPointer: {
+                    label: {
+                        formatter: function (params) {
+                            return 'uv  ' + params.value
+                                + (params.seriesData.length ? '：' + params.seriesData[0].data : '');
+                        }
+                    }
+                },
+                data: UVnameDatas
+            }
+        ],
+        yAxis: [
+            {
+                type: 'value'
+            }
+        ],
+        series: [
+            {
+                name: 'uv',
+                type: 'line',
+                smooth: true,
+                data: UVvalueDatas
+            }
+        ]
+    };
+
+    // 使用刚指定的配置项和数据显示图表。
+    setInterval(function () {
+        addDataUV();
+        myChart1.setOption(option2);
+        var length = UVvalueDatas.length
+        for (var i = 0; i < length; i++) {
+            //删除数组的第一个元素
+            UVvalueDatas.shift();
+            UVnameDatas.shift();
+        }
+    }, 500);
+
+    //热门页面
+    var myChart2 = echarts.init(document.getElementById('bar'));
+    option3 = {
+        title: {
+            text: '热门页面'
+        },
+        xAxis: {
+            type: 'category',
+            data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        },
+        yAxis: {
+            type: 'value'
+        },
+        series: [{
+            data: [120, 200, 150, 80, 70, 110, 130],
+            type: 'bar'
+        }]
+    };
+    myChart2.setOption(option3);
+</script>
+</body>
+
+</html>
