@@ -15,8 +15,8 @@
 <div id="container">
     <div id="top">
         <ul class="menu">
-            <li><a href="/templates/liuliang.html">实时流量</a></li>
-            <li><a href="">营销指标</a></li>
+            <li><a href="/liuliang">实时流量</a></li>
+            <li><a href="/yingxiao">营销指标</a></li>
             <li><a href="">用户画像</a></li>
         </ul>
     </div>
@@ -38,36 +38,54 @@
     //PV
     var myChart = echarts.init(document.getElementById('main_l'));
 
-    // var datas = [];
-    var valueDatas = [];
-    var nameDatas = [];
+    var funnelData = [];
+    var valueData = [];
 
-    function addDataPv() {
+    function addDataFunnel() {
         $.ajax({
             type: "POST",
-            url: "pvCount",
+            url: "funnelPlot",
             dataType: 'json',
             async: false,
             success: function (result) {
                 for (var i = 0; i < result.length; i++) {
-                    valueDatas.push(result[i].count)
-                    nameDatas.push(result[i].time)
+                    var funnelObj = {value : 0 ,name : 'blank'};
+                    funnelObj.value = result[i].count
+                    funnelObj.name = result[i].behavior
+                    funnelData.push(funnelObj)
                 }
+
+                // //定义数组排序规则
+                // function compare(prop) {
+                //     return function (a,b){
+                //         var value1 = a[prop];
+                //         var value2 = b[prop];
+                //         return value1 - value2;
+                //     }
+                // }
+                // //将数组排序
+                // funnelData.sort(compare('value'),false)
+                // //计算各级数据百分比
+                // funnelData[1].value = (funnelData[1].value / funnelData[0].value) * 100
+                // funnelData[2].value = (funnelData[2].value / funnelData[1].value) * 100
+                // funnelData[3].value = (funnelData[3].value / funnelData[2].value) * 100
+                // funnelData[0].value = 100
+                //
+                // print(funnelData)
             }
         });
     }
 
     var colors = ['#5793f3', '#d14a61', '#675bba'];
 
-
-    option = {
+    option1 = {
         title: {
-            text: '漏斗图',
-            subtext: '纯属虚构'
+            text: '今日|营销漏斗统计',
+            subtext: 'titleStr'
         },
         tooltip: {
             trigger: 'item',
-            formatter: "{a} <br/>{b} : {c}%"
+            formatter: "{a} <br/>{b} : {c} "
         },
         toolbox: {
             feature: {
@@ -77,9 +95,8 @@
             }
         },
         legend: {
-            data: ['曝光','点击','着陆','购买']
+            data: ['pv', 'cart', 'fav', 'buy']
         },
-
         series: [
             {
                 name:'漏斗图',
@@ -90,15 +107,16 @@
                 bottom: 60,
                 width: '80%',
                 // height: {totalHeight} - y - y2,
-                min: 0,
-                max: 100,
+                // min: 0,
+                // max: 100,
                 minSize: '0%',
                 maxSize: '100%',
                 sort: 'descending',
                 gap: 2,
                 label: {
                     show: true,
-                    position: 'inside'
+                    position: 'right',
+                    // formatter: '{b}: {c}'
                 },
                 labelLine: {
                     length: 10,
@@ -116,46 +134,43 @@
                         fontSize: 20
                     }
                 },
-                data: [
-                    {value: 60, name: '曝光'},
-                    {value: 40, name: '点击'},
-                    {value: 20, name: '着陆'},
-                    {value: 80, name: '购买'},
-                ]
+                data: funnelData
             }
         ]
     };
 
+    myChart.setOption(option1)
+
     // 使用刚指定的配置项和数据显示图表。
     setInterval(function () {
-        addDataPv();
+        addDataFunnel();
         myChart.setOption(option1);
-        var length = valueDatas.length
+        var length = funnelData.length
         for (var i = 0; i < length; i++) {
             //删除数组的第一个元素
-            valueDatas.shift();
-            nameDatas.shift();
+            funnelData.shift();
         }
     }, 500);
 
     /**
-     * UV
+     * 渠道分析
      */
     var myChart1 = echarts.init(document.getElementById('main_r'));
 
-    var UVvalueDatas = [];
-    var UVnameDatas = [];
+    var channelDatas = [];
 
-    function addDataUV() {
+    function addDataChannel() {
         $.ajax({
             type: "POST",
-            url: "uvCount",
+            url: "channelAnalysis",
             dataType: 'json',
             async: false,
             success: function (result) {
                 for (var i = 0; i < result.length; i++) {
-                    UVvalueDatas.push(result[i].count)
-                    UVnameDatas.push(result[i].time)
+                    var channelObj = {value : 0 ,name : 'blank'};
+                    channelObj.value = result[i].value
+                    channelObj.name = result[i].name
+                    channelDatas.push(channelObj)
                 }
             }
         });
@@ -163,74 +178,59 @@
 
     option2 = {
         title: {
-            text: '今日|分时UV统计'
+            text: '实时|营销渠道分析'
         },
-        color: colors,
-
         tooltip: {
-            trigger: 'none',
-            axisPointer: {
-                type: 'cross'
-            }
+            trigger: 'item',
+            formatter: '{a} <br/>{b}: {c} ({d}%)'
         },
         legend: {
-            data:['实时UV统计']
+            orient: 'vertical',
+            left: 10,
+            top: 40,
+            data: ['百度', '知乎', '抖音', '头条', '微信']
         },
-        grid: {
-            top: 70,
-            bottom: 50
-        },
-        xAxis: [
-            {
-                axisLabel: {
-                    interval:0,
-                    rotate:40
-                },
-                type: 'category',
-                axisTick: {
-                    alignWithLabel: true
-                },
-                axisLine: {
-                    onZero: false,
-                    lineStyle: {
-                        color: colors[1]
-                    }
-                },
-                axisPointer: {
-                    label: {
-                        formatter: function (params) {
-                            return 'uv  ' + params.value
-                                + (params.seriesData.length ? '：' + params.seriesData[0].data : '');
-                        }
-                    }
-                },
-                data: UVnameDatas
-            }
-        ],
-        yAxis: [
-            {
-                type: 'value'
-            }
-        ],
         series: [
             {
-                name: 'uv',
-                type: 'line',
-                smooth: true,
-                data: UVvalueDatas
+                name: '营销渠道',
+                type: 'pie',
+                radius: ['50%', '70%'],
+                avoidLabelOverlap: false,
+                label: {
+                    show: false,
+                    position: 'center'
+                },
+                emphasis: {
+                    label: {
+                        show: true,
+                        fontSize: '30',
+                        fontWeight: 'bold'
+                    }
+                },
+                labelLine: {
+                    show: false
+                },
+                data: channelDatas
+                //     [
+                //     {value: 335, name: '直接访问'},
+                //     {value: 310, name: '邮件营销'},
+                //     {value: 234, name: '联盟广告'},
+                //     {value: 135, name: '视频广告'},
+                //     {value: 1548, name: '搜索引擎'}
+                // ]
             }
         ]
     };
 
+    myChart1.setOption(option2);
     // 使用刚指定的配置项和数据显示图表。
     setInterval(function () {
-        addDataUV();
+        addDataChannel();
         myChart1.setOption(option2);
-        var length = UVvalueDatas.length
+        var length = channelDatas.length;
         for (var i = 0; i < length; i++) {
             //删除数组的第一个元素
-            UVvalueDatas.shift();
-            UVnameDatas.shift();
+            channelDatas.shift();
         }
     }, 500);
 

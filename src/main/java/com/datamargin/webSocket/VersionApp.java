@@ -40,4 +40,9 @@ public class VersionApp {
         return new ModelAndView("liuliang");
     }
 
+    @RequestMapping(value = "yingxiao", method = RequestMethod.GET)
+    public ModelAndView yingxiao() {
+        return new ModelAndView("yingxiao");
+    }
+
 }
